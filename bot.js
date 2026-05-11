@@ -276,12 +276,13 @@ client.on('interactionCreate', async interaction => {
             return;
         }
         
-        // Defer reply to prevent timeout
-        await interaction.deferReply({ ephemeral: true });
-        await interaction.editReply('🔔 Sending test azan...');
+        // Fire azan immediately, handle reply failure gracefully
+        sendAzan('Test');
         
-        // Send azan after short delay
-        setTimeout(() => sendAzan('Test'), 500);
+        // Try to reply but don't crash if it fails
+        interaction.reply({ content: '🔔 Test azan triggered!', ephemeral: true }).catch(() => {
+            console.log('Reply timeout (expected) - azan still triggered');
+        });
     }
 });
 
