@@ -18,7 +18,7 @@ const CHANNEL_ID = process.env.CHANNEL_ID;
 const CITY = process.env.CITY || 'Dubai';
 const COUNTRY = process.env.COUNTRY || 'AE';
 const METHOD = process.env.METHOD || '4';
-const AZAN_AUDIO_PATH = process.env.AZAN_AUDIO_PATH || './azan-short.mp3';
+const AZAN_AUDIO_PATH = '/app/azan-short.mp3'; // Absolute path on Railway
 
 let prayerTimes = {};
 let activeConnections = new Map();
@@ -104,11 +104,20 @@ async function playAzanInChannel(voiceChannel) {
             console.log(`✅ Left ${voiceChannel.name}`);
         });
 
-        // Error handling
+        // Error handling - leave if audio fails
         player.on('error', error => {
             console.error(`Audio player error in ${voiceChannel.name}:`, error);
             connection.destroy();
+            console.log(`❌ Left ${voiceChannel.name} due to error`);
         });
+
+        // Safety timeout - leave after 15 seconds no matter what
+        setTimeout(() => {
+            if (connection.state.status !== 'destroyed') {
+                connection.destroy();
+                console.log(`⏱️ Left ${voiceChannel.name} (timeout)`);
+            }
+        }, 15000);
 
         connection.on(VoiceConnectionStatus.Disconnected, () => {
             connection.destroy();
