@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, SlashCommandBuilder, REST, Routes } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus } = require('@discordjs/voice');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus, StreamType } = require('@discordjs/voice');
 const cron = require('node-cron');
 const fetch = require('node-fetch');
 const path = require('path');
@@ -105,7 +105,10 @@ async function playAzanInChannel(voiceChannel) {
         console.log(`✅ Audio file exists`);
 
         const player = createAudioPlayer();
-        const resource = createAudioResource(AZAN_AUDIO_PATH);
+        const resource = createAudioResource(AZAN_AUDIO_PATH, {
+            inlineVolume: true,
+            inputType: StreamType.Arbitrary
+        });
 
         console.log(`🎵 Audio resource created`);
 
