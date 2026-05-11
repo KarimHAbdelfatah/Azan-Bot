@@ -84,29 +84,59 @@ function getOccupiedVoiceChannels(guild) {
 // Play Azan in voice channel
 async function playAzanInChannel(voiceChannel) {
     try {
+        console.log(`🎯 Attempting to join: ${voiceChannel.name}`);
+        
         const connection = joinVoiceChannel({
             channelId: voiceChannel.id,
             guildId: voiceChannel.guild.id,
             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
         });
 
+        console.log(`✅ Connected to voice channel`);
+        console.log(`📁 Audio file path: ${AZAN_AUDIO_PATH}`);
+        
+        // Check if file exists
+        const fs = require('fs');
+        if (!fs.existsSync(AZAN_AUDIO_PATH)) {
+            console.error(`❌ Audio file not found at: ${AZAN_AUDIO_PATH}`);
+            connection.destroy();
+            return;
+        }
+        console.log(`✅ Audio file exists`);
+
         const player = createAudioPlayer();
         const resource = createAudioResource(AZAN_AUDIO_PATH);
 
+        console.log(`🎵 Audio resource created`);
+
         connection.subscribe(player);
+        console.log(`🔗 Player subscribed to connection`);
+        
         player.play(resource);
+        console.log(`▶️ Audio playback started`);
 
         console.log(`🔊 Playing Azan in: ${voiceChannel.name} (${voiceChannel.guild.name})`);
 
+        // Track player state
+        player.on(AudioPlayerStatus.Playing, () => {
+            console.log(`✅ Audio is now playing`);
+        });
+
+        player.on(AudioPlayerStatus.Buffering, () => {
+            console.log(`⏳ Audio is buffering...`);
+        });
+
         // Leave after audio finishes
         player.on(AudioPlayerStatus.Idle, () => {
+            console.log(`⏹️ Audio finished playing`);
             connection.destroy();
             console.log(`✅ Left ${voiceChannel.name}`);
         });
 
         // Error handling - leave if audio fails
         player.on('error', error => {
-            console.error(`Audio player error in ${voiceChannel.name}:`, error);
+            console.error(`❌ Audio player error in ${voiceChannel.name}:`, error);
+            console.error(`Error stack:`, error.stack);
             connection.destroy();
             console.log(`❌ Left ${voiceChannel.name} due to error`);
         });
@@ -114,17 +144,24 @@ async function playAzanInChannel(voiceChannel) {
         // Safety timeout - leave after 15 seconds no matter what
         setTimeout(() => {
             if (connection.state.status !== 'destroyed') {
+                console.log(`⏱️ Timeout reached, forcing disconnect`);
                 connection.destroy();
                 console.log(`⏱️ Left ${voiceChannel.name} (timeout)`);
             }
         }, 15000);
 
         connection.on(VoiceConnectionStatus.Disconnected, () => {
+            console.log(`🔌 Connection disconnected`);
             connection.destroy();
         });
 
+        connection.on(VoiceConnectionStatus.Ready, () => {
+            console.log(`🎙️ Voice connection ready`);
+        });
+
     } catch (error) {
-        console.error(`Error playing Azan in ${voiceChannel.name}:`, error);
+        console.error(`❌ Error in playAzanInChannel:`, error);
+        console.error(`Error stack:`, error.stack);
     }
 }
 
