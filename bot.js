@@ -14,8 +14,7 @@ const {
     createAudioPlayer,
     createAudioResource,
     AudioPlayerStatus,
-    VoiceConnectionStatus,
-    entersState
+    VoiceConnectionStatus
 } = require('@discordjs/voice');
 
 const cron = require('node-cron');
@@ -43,8 +42,8 @@ const CITY = process.env.CITY || 'Dubai';
 const COUNTRY = process.env.COUNTRY || 'AE';
 const METHOD = process.env.METHOD || '4';
 
-// TEST URL - replace with path.join(__dirname, 'azan-short.mp3') after testing
-const AZAN_AUDIO_PATH = 'https://www.youtube.com/watch?v=SI4CScs4D2Q';
+// TEST URL - direct MP3 that works
+const AZAN_AUDIO_PATH = 'https://file-examples.com/storage/fe783855d66e29c8c45e1f2/2017/11/file_example_MP3_700KB.mp3';
 const PLAY_DURATION = 10000; // 10 seconds
 
 let prayerTimes = {};
@@ -171,97 +170,76 @@ async function playAzanInChannel(voiceChannel) {
             selfDeaf: false
         });
 
-        // Wait until connection is ready
-        await entersState(
-            connection,
-            VoiceConnectionStatus.Ready,
-            30000
-        );
-
-        console.log(`✅ Voice connection ready`);
+        console.log(`✅ Voice connection created`);
 
         // Create player
         const player = createAudioPlayer();
 
-        // Create resource from YouTube
-        const stream = ytdl(AZAN_AUDIO_PATH, {
-            filter: 'audioonly',
-            quality: 'highestaudio',
-            highWaterMark: 1 << 25
-        });
+        // Create resource from URL
+        const resource = createAudioResource(AZAN_AUDIO_PATH);
 
-        const resource = createAudioResource(stream);
-
-        // Subscribe
+        // Subscribe immediately
         connection.subscribe(player);
+
+        console.log(`🔗 Player subscribed`);
 
         // Debug logs
         player.on('stateChange', (oldState, newState) => {
             console.log(
-                `🎵 Player state: ${oldState.status} -> ${newState.status}`
+                `🎵 Player: ${oldState.status} -> ${newState.status}`
             );
         });
 
         connection.on('stateChange', (oldState, newState) => {
             console.log(
-                `🔊 Connection state: ${oldState.status} -> ${newState.status}`
+                `🔊 Connection: ${oldState.status} -> ${newState.status}`
             );
         });
 
         // Errors
         player.on('error', error => {
-            console.error('❌ Audio player error:', error);
+            console.error('❌ Player error:', error);
             connection.destroy();
         });
 
-        connection.on('error', error => {
-            console.error('❌ Connection error:', error);
-            connection.destroy();
-        });
-
-        // Play
+        // Play immediately
         player.play(resource);
 
-        console.log(`▶️ Playing azan in ${voiceChannel.name}`);
+        console.log(`▶️ Playing azan`);
 
         // Stop after 10 seconds
         setTimeout(() => {
             try {
                 player.stop();
-                console.log(`⏱️ Stopped after ${PLAY_DURATION / 1000} seconds`);
+                console.log(`⏱️ Stopped after 10s`);
             } catch (e) {}
         }, PLAY_DURATION);
 
         // Leave when done
         player.on(AudioPlayerStatus.Idle, () => {
 
-            console.log(`⏹️ Finished playing`);
+            console.log(`⏹️ Finished`);
 
             setTimeout(() => {
-
                 try {
                     connection.destroy();
                     console.log(`👋 Left channel`);
                 } catch (e) {}
-
             }, 1000);
         });
 
         // Safety timeout
         setTimeout(() => {
-
             try {
-
-                connection.destroy();
-                console.log(`⏱️ Safety disconnect`);
-
+                if (connection.state.status !== 'destroyed') {
+                    connection.destroy();
+                    console.log(`⏱️ Safety disconnect`);
+                }
             } catch (e) {}
-
-        }, 60000);
+        }, 20000);
 
     } catch (error) {
-
-        console.error('❌ playAzanInChannel Error:', error);
+        console.error('❌ Error:', error.message);
     }
 }
 
