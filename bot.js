@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, SlashCommandBuilder, REST, Routes } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus } = require('@discordjs/voice');
 const cron = require('node-cron');
 const fetch = require('node-fetch');
@@ -22,6 +22,34 @@ const AZAN_AUDIO_PATH = process.env.AZAN_AUDIO_PATH || './azan-short.mp3';
 
 let prayerTimes = {};
 let activeConnections = new Map();
+
+// Define slash commands
+const commands = [
+    new SlashCommandBuilder()
+        .setName('prayertimes')
+        .setDescription('Show today\'s prayer times'),
+    new SlashCommandBuilder()
+        .setName('nextprayer')
+        .setDescription('Show when the next prayer is'),
+    new SlashCommandBuilder()
+        .setName('test')
+        .setDescription('Test azan notification (admin only)')
+].map(command => command.toJSON());
+
+// Register commands
+async function registerCommands() {
+    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    try {
+        console.log('Registering slash commands...');
+        await rest.put(
+            Routes.applicationCommands(client.user.id),
+            { body: commands }
+        );
+        console.log('✅ Slash commands registered');
+    } catch (error) {
+        console.error('Error registering commands:', error);
+    }
+}
 
 // Fetch prayer times from Aladhan API
 async function fetchPrayerTimes() {
@@ -134,6 +162,9 @@ function checkPrayerTime() {
 client.once('ready', () => {
     console.log(`✅ Bot logged in as ${client.user.tag}`);
     
+    // Register commands
+    registerCommands();
+    
     // Fetch prayer times immediately
     fetchPrayerTimes();
     
@@ -152,6 +183,56 @@ client.once('ready', () => {
     console.log(`📢 Text notifications: ${CHANNEL_ID}`);
     console.log(`🔊 Voice enabled: Will join occupied channels`);
     console.log(`🎵 Audio file: ${AZAN_AUDIO_PATH}`);
-     });
+});
+
+// Handle slash commands
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+
+    const { commandName } = interaction;
+
+    if (commandName === 'prayertimes') {
+        const times = `**🕌 Prayer Times for ${CITY}, ${COUNTRY}**\n\n` +
+            `🌅 **Fajr:** ${prayerTimes.Fajr || 'Loading...'}\n` +
+            `☀️ **Dhuhr:** ${prayerTimes.Dhuhr || 'Loading...'}\n` +
+            `🌤️ **Asr:** ${prayerTimes.Asr || 'Loading...'}\n` +
+            `🌆 **Maghrib:** ${prayerTimes.Maghrib || 'Loading...'}\n` +
+            `🌙 **Isha:** ${prayerTimes.Isha || 'Loading...'}`;
+        
+        await interaction.reply(times);
+    }
+
+    else if (commandName === 'nextprayer') {
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
+        const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+        let nextPrayer = null;
+        
+        for (const prayer of prayers) {
+            if (prayerTimes[prayer] && prayerTimes[prayer] > currentTime) {
+                nextPrayer = { name: prayer, time: prayerTimes[prayer] };
+                break;
+            }
+        }
+        
+        if (!nextPrayer) {
+            nextPrayer = { name: 'Fajr', time: prayerTimes.Fajr };
+        }
+        
+        await interaction.reply(`⏰ **Next Prayer:** ${nextPrayer.name} at ${nextPrayer.time}`);
+    }
+
+    else if (commandName === 'test') {
+        // Check if user has admin permissions
+        if (!interaction.member.permissions.has('Administrator')) {
+            await interaction.reply({ content: '❌ Only admins can use this command', ephemeral: true });
+            return;
+        }
+        
+        await interaction.reply('🔔 Sending test azan...');
+        sendAzan('Test');
+    }
+});
 
 client.login(process.env.DISCORD_TOKEN);
