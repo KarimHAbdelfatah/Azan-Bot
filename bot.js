@@ -192,8 +192,8 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply(`⏰ Next prayer: **${nextPrayer}** at **${prayerTimes[nextPrayer]}**`);
     }
     else if (commandName === 'test') {
-        await interaction.reply({ content: '🔔 Test azan triggered!', ephemeral: true });
         sendAzan('Test');
+        interaction.reply({ content: '🔔 Test triggered!', ephemeral: true }).catch(() => {});
     }
 });
 
