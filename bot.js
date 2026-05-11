@@ -276,8 +276,12 @@ client.on('interactionCreate', async interaction => {
             return;
         }
         
-        await interaction.reply({ content: '🔔 Sending test azan...', ephemeral: true });
-        setTimeout(() => sendAzan('Test'), 100);
+        // Defer reply to prevent timeout
+        await interaction.deferReply({ ephemeral: true });
+        await interaction.editReply('🔔 Sending test azan...');
+        
+        // Send azan after short delay
+        setTimeout(() => sendAzan('Test'), 500);
     }
 });
 
