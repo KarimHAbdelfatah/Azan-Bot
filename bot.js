@@ -18,7 +18,7 @@ const CHANNEL_ID = process.env.CHANNEL_ID;
 const CITY = process.env.CITY || 'Dubai';
 const COUNTRY = process.env.COUNTRY || 'AE';
 const METHOD = process.env.METHOD || '4';
-const AZAN_AUDIO_PATH = '/app/azan-short.mp3'; // Absolute path on Railway
+const AZAN_AUDIO_PATH = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'; // Test URL
 
 let prayerTimes = {};
 let activeConnections = new Map();
@@ -93,16 +93,7 @@ async function playAzanInChannel(voiceChannel) {
         });
 
         console.log(`✅ Connected to voice channel`);
-        console.log(`📁 Audio file path: ${AZAN_AUDIO_PATH}`);
-        
-        // Check if file exists
-        const fs = require('fs');
-        if (!fs.existsSync(AZAN_AUDIO_PATH)) {
-            console.error(`❌ Audio file not found at: ${AZAN_AUDIO_PATH}`);
-            connection.destroy();
-            return;
-        }
-        console.log(`✅ Audio file exists`);
+        console.log(`📁 Audio source: ${AZAN_AUDIO_PATH}`);
 
         const player = createAudioPlayer();
         const resource = createAudioResource(AZAN_AUDIO_PATH, {
