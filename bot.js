@@ -69,23 +69,50 @@ async function playAzanInChannel(voiceChannel) {
             adapterCreator: voiceChannel.guild.voiceAdapterCreator
         });
 
+        console.log(`🔗 Connection created, status: ${connection.state.status}`);
+
+        // Log all connection state changes
+        connection.on('stateChange', (oldState, newState) => {
+            console.log(`🔊 Connection: ${oldState.status} -> ${newState.status}`);
+        });
+
+        connection.on('error', error => {
+            console.error(`❌ Connection error:`, error);
+        });
+
         const player = createAudioPlayer();
         const resource = createAudioResource(AZAN_AUDIO_PATH);
         
-        connection.subscribe(player);
-        player.play(resource);
+        console.log(`🎵 Resource created`);
         
+        // Log all player state changes
+        player.on('stateChange', (oldState, newState) => {
+            console.log(`🎶 Player: ${oldState.status} -> ${newState.status}`);
+        });
+        
+        const subscription = connection.subscribe(player);
+        console.log(`📡 Subscription: ${subscription ? 'SUCCESS' : 'FAILED'}`);
+        
+        player.play(resource);
         console.log(`▶️ Playing azan`);
 
         player.on(AudioPlayerStatus.Idle, () => {
+            console.log(`⏹️ Player idle - destroying connection`);
             connection.destroy();
-            console.log(`✅ Left ${voiceChannel.name}`);
         });
 
         player.on('error', error => {
-            console.error('❌ Player error:', error);
+            console.error(`❌ Player error:`, error);
             connection.destroy();
         });
+
+        // Timeout after 15 seconds
+        setTimeout(() => {
+            if (connection.state.status !== 'destroyed') {
+                console.log(`⏱️ Timeout - forcing disconnect`);
+                connection.destroy();
+            }
+        }, 15000);
 
     } catch (error) {
         console.error('❌ Playback error:', error);
