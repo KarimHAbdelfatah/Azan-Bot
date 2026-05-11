@@ -152,9 +152,6 @@ client.once('ready', () => {
     console.log(`📢 Text notifications: ${CHANNEL_ID}`);
     console.log(`🔊 Voice enabled: Will join occupied channels`);
     console.log(`🎵 Audio file: ${AZAN_AUDIO_PATH}`);
-    // TEST: Send immediately on startup
-setTimeout(() => {
-    sendAzan('Test');
-}, 5000); // Wait 5 seconds after bot starts
+     });
 
 client.login(process.env.DISCORD_TOKEN);
