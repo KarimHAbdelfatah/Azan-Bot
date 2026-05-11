@@ -1,0 +1,19 @@
+{
+  "name": "discord-azan-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for automated Azan (prayer time) notifications",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^2.7.0",
+    "dotenv": "^16.4.1",
+    "@discordjs/voice": "^0.16.1",
+    "opusscript": "^0.1.1",
+    "libsodium-wrappers": "^0.7.13",
+    "ffmpeg-static": "^5.2.0"
+  }
+}
