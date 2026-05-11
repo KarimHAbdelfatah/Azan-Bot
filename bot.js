@@ -230,8 +230,8 @@ client.on('interactionCreate', async interaction => {
             return;
         }
         
-        await interaction.reply('🔔 Sending test azan...');
-        sendAzan('Test');
+        await interaction.reply({ content: '🔔 Sending test azan...', ephemeral: true });
+        setTimeout(() => sendAzan('Test'), 100);
     }
 });
 
