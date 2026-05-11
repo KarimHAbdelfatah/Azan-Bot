@@ -74,6 +74,12 @@ async function playAzanInChannel(voiceChannel) {
         // Log all connection state changes
         connection.on('stateChange', (oldState, newState) => {
             console.log(`🔊 Connection: ${oldState.status} -> ${newState.status}`);
+            
+            // When connection becomes ready, unpause the player if needed
+            if (newState.status === 'ready' && player.state.status === 'autopaused') {
+                console.log(`🔓 Connection ready - unpausing player`);
+                player.unpause();
+            }
         });
 
         connection.on('error', error => {
